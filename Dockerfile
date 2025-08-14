@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # Ultra-optimized Dockerfile - minimal runtime dependencies (no n8n packages)
 
-# Stage 1: Builder (TypeScript compilation only)
+# --- Stage 1: Builder (TypeScript compilation only)
 FROM node:22-alpine AS builder
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=/root/.npm \
 COPY src ./src
 RUN npx tsc -p tsconfig.build.json
 
-# Stage 2: Runtime (minimal dependencies)
+# --- Stage 2: Runtime (minimal dependencies)
 FROM node:22-alpine AS runtime
 WORKDIR /app
 
@@ -63,7 +63,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
-# ⬇️ Run the stdio MCP via Supergateway to expose HTTP/SSE on $PORT
+# Run stdio MCP via Supergateway to expose HTTP/SSE on $PORT
+# Added: --cors and --logLevel debug (helps with n8n preflight/POST)
 CMD ["sh","-lc","npx -y supergateway \
   --stdio \"node dist/mcp/index.js\" \
   --port ${PORT:-10000} \
@@ -71,4 +72,5 @@ CMD ["sh","-lc","npx -y supergateway \
   --ssePath /sse \
   --messagePath /message \
   --healthEndpoint /healthz \
-  --logLevel info"]
+  --logLevel debug \
+  --cors"]
